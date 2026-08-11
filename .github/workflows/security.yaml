@@ -20,22 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Gitleaks
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s -- -b /usr/local/bin
-
       - name: Verify Gitleaks
         run: |
-          gitleaks version
+          docker run --rm zricethezav/gitleaks:latest version
 
-      - name: Scan repository
+      - name: Run Gitleaks
         run: |
-          gitleaks detect \
-            --source . \
-            --report-format json \
-            --report-path leaks.json \
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+            --source=/repo \
+            --report-format=json \
+            --report-path=/repo/leaks.json \
             --redact \
-            --exit-code 1
+            --exit-code=1
 
       - name: Upload Gitleaks report
         if: always()
