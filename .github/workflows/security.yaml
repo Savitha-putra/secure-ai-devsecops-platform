@@ -20,25 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks version
+      - name: Check Gitleaks version
         run: |
           docker run --rm zricethezav/gitleaks:v8.18.4 version
-
-      - name: Show test secret
-        run: |
-          echo "Checking test-secret.txt"
-          cat test-secret.txt || true
 
       - name: Run Gitleaks
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/repo" \
             zricethezav/gitleaks:v8.18.4 \
-            dir /repo \
-            --report-format json \
-            --report-path /repo/leaks.json \
+            detect \
+            --source=/repo \
+            --report-format=json \
+            --report-path=/repo/leaks.json \
             --redact \
-            --exit-code 1
+            --exit-code=1
 
       - name: Upload Gitleaks report
         if: always()
