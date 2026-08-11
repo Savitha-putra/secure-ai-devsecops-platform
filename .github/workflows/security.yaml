@@ -1,3 +1,5 @@
+name: Gitleaks Secret Scan
+
 on:
   push:
     branches:
@@ -6,23 +8,28 @@ on:
 
 jobs:
   gitleaks:
-    name: Secret Scan
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source=. --report-path=leaks.json --redact --exit-code=1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Gitleaks
+        run: |
+          wget -qO- https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_x64.tar.gz | tar xz
+          sudo mv gitleaks /usr/local/bin/
 
-      - name: Upload gitleaks report
+      - name: Scan repository
+        run: |
+          gitleaks detect \
+            --source . \
+            --report-format json \
+            --report-path leaks.json \
+            --redact \
+            --exit-code 1
+
+      - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
