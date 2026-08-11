@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-ai-app
+  namespace: secure-platform
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: secure-ai-app
+
+  template:
+    metadata:
+      labels:
+        app: secure-ai-app
+
+    spec:
+      containers:
+        - name: secure-ai-app
+          image: secure-ai-devsecops-platform:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
