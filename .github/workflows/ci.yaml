@@ -63,4 +63,4 @@ jobs:
 
       - name: Verify image signature
         run: |
-          cosign verify "$IMAGE"
+          cosign verify --certificate-identity-regexp="https://github.com/${{ github.repository_owner }}/secure-ai-devsecops-platform" --certificate-oidc-issuer="https://token.actions.githubusercontent.com" "$IMAGE"
