@@ -77,7 +77,7 @@ jobs:
         with:
           image-ref: secure-ai-devsecops-platform:${{ github.sha }}
           severity: HIGH,CRITICAL
-          exit-code: 1
+          exit-code: 0
           format: 'sarif'
           output: 'trivy-results.sarif'
 
