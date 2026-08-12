@@ -10,6 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -28,11 +32,12 @@ jobs:
         run: |
           python -m compileall app
 
-      - name: Docker build
+      - name: Set GHCR image
         run: |
-          docker build \
-            -t secure-ai-devsecops-platform:${{ github.sha }} .
-      
+          IMAGE="ghcr.io/${{ github.repository_owner }}/secure-ai-devsecops-platform"
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -43,9 +48,9 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t ghcr.io/${{ github.repository_owner | lower }}/secure-ai-devsecops-platform:${{ github.sha }} .
+            -t "${IMAGE}:${{ github.sha }}" .
 
       - name: Push image
         run: |
           docker push \
-            ghcr.io/${{ github.repository_owner | lower }}/secure-ai-devsecops-platform:${{ github.sha }}
+            "${IMAGE}:${{ github.sha }}"
