@@ -77,4 +77,11 @@ jobs:
         with:
           image-ref: secure-ai-devsecops-platform:${{ github.sha }}
           severity: HIGH,CRITICAL
-          exit-code: 1        
+          exit-code: 1
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'        
