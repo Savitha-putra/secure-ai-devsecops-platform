@@ -1,0 +1,53 @@
+# What awk Is & Where It’s Most Commonly Used
+
+awk is a data-driven scripting language and text-processing tool designed for column-based data. While grep searches for lines and sed edits text streams, awk splits each line into numbered fields ($1, $2, $3, etc.) so you can extract, rearrange, filter, and calculate values.
+
+- Extracting Specific Columns: Pulling usernames, IP addresses, or timestamps from logs, CSVs, and /etc/passwd.
+- Performing Calculations on Data: Summing file sizes, averaging response times, or counting occurrences in reports.
+- Formatting Output: Turning messy command output into clean, readable tables.
+
+## 25 Examples of awk (Using file.txt)
+
+### Printing Columns & Fields
+
+1. Print the entire file (default action): `awk '{print}' file.txt`
+2. Print the 1st space-separated column of every line: `awk '{print $1}' file.txt`
+3. Print the 1st and 3rd space-separated columns: `awk '{print $1, $3}' file.txt`
+4. Print the last column of every line ($NF = Number of Fields): `awk '{print $NF}' file.txt`
+5. Print the second-to-last column: `awk '{print $(NF-1)}' file.txt`
+6. Set colon (:) as delimiter and print usernames ($2) and shells ($6): `awk -F':' '/^user/ {print $2, $6}' file.txt`
+7. Format output with custom text labels: `awk -F':' '/^user/ {print "User:", $2, "| Role:", $4}' file.txt`
+8. Change the output field separator (OFS) to a comma: `awk -F':' 'BEGIN{OFS=","} /^user/ {print $2,$3,$4}' file.txt`
+
+### Filtering Rows & Pattern Matching
+
+9. Print lines matching the word failed: `awk '/failed/ {print}' file.txt`
+10. Print lines that do NOT start with #: `awk '!/^#/ {print}' file.txt`
+11. Print lines where the 3rd colon-separated field (UID) is greater than 1001: `awk -F':' '$3 > 1001 {print $2, $3}' file.txt`
+12. Print lines where the 4th field (role) equals admin: `awk -F':' '$4 == "admin" {print $0}' file.txt`
+13. Match a regex on a specific column ($2 starts with a or b): `awk -F':' '$2 ~ /^[ab]/ {print $2}' file.txt`
+14. Print lines with more than 5 space-separated words: `awk 'NF > 5 {print}' file.txt`
+15. Print non-empty lines only: `awk 'NF > 0 {print}' file.txt`
+
+### Line Numbers & Ranges
+
+16. Prepend line numbers (NR = Number of Records) to every line: `awk '{print NR, $0}' file.txt`
+17. Print only line 4: `awk 'NR == 4 {print}' file.txt`
+18. Print lines 2 through 5: `awk 'NR >= 2 && NR <= 5 {print}' file.txt`
+19. Print the total number of lines in the file at the end: `awk 'END {print "Total lines:", NR}' file.txt`
+
+### Calculations & Built-in Functions
+
+20. Sum all user IDs ($3) from user lines: `awk -F':' '/^user/ {sum += $3} END {print "UID Sum:", sum}' file.txt`
+21. Count how many lines match user: `awk '/^user/ {count++} END {print count}' file.txt`
+22. Convert usernames ($2) to uppercase: `awk -F':' '/^user/ {print toupper($2)}' file.txt`
+23. Print the character length of each line: `awk '{print length($0), $0}' file.txt`
+24. Replace old with NEW globally on each line using gsub(): `awk '{gsub(/old/, "NEW"); print}' file.txt`
+25. Add a header before output and a footer after output: `awk -F':' 'BEGIN{print "--- USERS ---"} /^user/{print $2} END{print "--- DONE ---"}' file.txt`
+
+## Real-World awk Examples (Without file.txt)
+
+- Calculate total memory used by all running processes: `ps aux | awk '{sum += $6} END {print sum/1024 " MB"}'`
+- List all human user accounts on a Linux system (UID >= 1000): `awk -F':' '$3 >= 1000 {print $1, $3}' /etc/passwd`
+- Find the top 5 IP addresses hitting an Nginx/Apache access log: `awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -nr | head -5`
+- Print only disk usage percentage and mount point from df -h: `df -h | awk '{print $5, $6}'`
