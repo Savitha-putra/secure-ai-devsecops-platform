@@ -42,3 +42,37 @@ Multi-File & Pipeline Usage
 23. Search recursively through all files in the current directory: ``` grep -r "alice" . ```
 24. Suppress error messages for unreadable/missing files: ``` grep -s "alice" file.txt missing.txt ```
 25. Filter output from another command via pipe: ``` cat file.txt | grep "user" |  grep -v "guest" ```
+
+
+
+Real-World grep Examples (Without file.txt)
+
+
+1. System & Process Monitoring
+
+• Find if a specific program (e.g., Nginx) is running: ps aux | grep nginx
+• Check which process is listening on port 8080: ss -tulnp | grep 8080
+• Check if a specific package is installed (Debian/Ubuntu): dpkg -l | grep python3
+• Check if a specific package is installed (RHEL/CentOS): rpm -qa | grep openssl
+• Check USB devices connected to the system: lsusb | grep -i "keyboard"
+
+2. Log Analysis & Troubleshooting
+
+• Find all critical errors in the system log: grep -i "error" /var/log/syslog
+• Monitor a live log file in real time for failures: tail -f /var/log/nginx/access.log | grep "500"
+• Find failed SSH login attempts in auth logs: grep "Failed password" /var/log/auth.log
+• Count how many times a specific IP hit your web server: grep -c "192.168.1.50" /var/log/nginx/access.log
+• See 5 lines before and after a kernel panic message: grep -C 5 "panic" /var/log/kern.log
+
+3. Searching Codebases & Directories
+
+• Find every file in a project containing a specific function: grep -rnw '/path/to/project' -e 'authenticateUser'
+• Search for TODO comments while ignoring .git and node_modules: grep -rn --exclude-dir={.git,node_modules} "TODO" .
+• Search only inside .py (Python) files: grep -rn --include="*.py" "import requests" .
+• Find hardcoded IP addresses across a codebase: grep -rnE "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" src/
+
+4. Reading Clean Configuration Files
+
+• View active SSH server settings without comments or empty lines: grep -vE "^#|^$" /etc/ssh/sshd_config
+• Check the exact CPU model name on a Linux machine: grep "model name" /proc/cpuinfo | head -n 1
+• Check total RAM in /proc/meminfo: grep "MemTotal" /proc/meminfo
