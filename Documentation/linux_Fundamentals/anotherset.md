@@ -9,26 +9,33 @@ systemctl cat nginx.service
 ```
 19. **Create an override file to customize a service without editing the vendor file:**
 ```bash
-sudo systemctl edit nginx.service ```
+sudo systemctl edit nginx.service
+```
 21. **Mask a service so it cannot be started manually or by other services:**
 ```bash
-sudo systemctl mask bluetooth.service ```
+sudo systemctl mask bluetooth.service
+```
 22. **Unmask a previously masked service:**
 ```bash
-sudo systemctl unmask bluetooth.service ```
+sudo systemctl unmask bluetooth.service
+```
 23. **Show all low-level properties (memory limits, environment variables, restart policy) of a service:**
 ```bash
-systemctl show nginx ```
+systemctl show nginx
+```
 24. **List dependencies required by a service:**
 ```bash
-systemctl list-dependencies nginx ```
+systemctl list-dependencies nginx
+```
 25. **List all active systemd timers (modern replacement for cron):**
 ```bash
-systemctl list-timers --all ```
+systemctl list-timers --all
+```
 26. **Reset the failed state counter of a service after fixing a crash:**
 ```bash
-sudo systemctl reset-failed nginx ```
+sudo systemctl reset-failed nginx
 ```
+
 
 4. journalctl (Systemd Log Viewer) — 25 Examples
 
