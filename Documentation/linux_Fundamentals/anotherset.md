@@ -1,8 +1,12 @@
 **Reload systemd manager configuration after creating or editing a `.service` file:
-**bash
+```bash
 sudo systemctl daemon-reload
-**View the full contents of a service unit file:**bash
+```
+
+**View the full contents of a service unit file:**
+```bash
 systemctl cat nginx.service
+```
 19. **Create an override file to customize a service without editing the vendor file:**bash
 sudo systemctl edit nginx.service
 20. **Mask a service so it cannot be started manually or by other services:**bash
