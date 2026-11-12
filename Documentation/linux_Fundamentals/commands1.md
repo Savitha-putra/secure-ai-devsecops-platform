@@ -1,7 +1,23 @@
+sed (short for Stream Editor) is a command-line utility in Unix and Linux used to parse, filter, and transform text streams or files automatically without opening them in a text editor.
 
+How sed Works
+
+sed processes text one line at a time using a continuous loop:
+• Read: It reads a single line from an input file or pipeline into a temporary memory area called the pattern space.
+• Execute: It applies your specified instructions (such as find-and-replace, delete, or insert) to that line.
+• Print: It outputs the modified line to the screen (standard output) and clears the pattern space.
+• Repeat: It moves to the next line until the entire file is processed. By default, sed does not change your original file unless you pass the -i (in-place) flag.
+
+Where sed Is Most Commonly Used
+
+• Bulk Find-and-Replace: Updating IP addresses, URLs, or passwords across dozens of configuration files in seconds without opening each file manually.
+• Cleaning Log and Data Files: Stripping out blank lines, removing # comment lines, or deleting debug messages before feeding data into another script.
+• Automated CI/CD & Deployment Scripts: Dynamically injecting version numbers, environment variables, or build tags into templates during software deployment.
+• Extracting Specific Line Ranges: Pulling lines 500 to 600 out of a massive multi-gigabyte log file where standard text editors would freeze or crash.
+• Pipeline Text Formatting: Cleaning up output on the fly between commands (for example, command1 | sed '...' | command2).
 Create below file and then start running below commands
 ```bash
-cat << 'EOF' > file.txt ``` 
+cat << 'EOF' > file.txt
 # Configuration and Log File
 user:alice:1001:admin:/home/alice:/bin/bash
 user:bob:1002:developer:/home/bob:/bin/zsh
