@@ -7,19 +7,26 @@ sudo systemctl daemon-reload
 ```bash
 systemctl cat nginx.service
 ```
-19. **Create an override file to customize a service without editing the vendor file:** ```bash
+19. **Create an override file to customize a service without editing the vendor file:**
+```bash
 sudo systemctl edit nginx.service ```
-20. **Mask a service so it cannot be started manually or by other services:** ```bash
+21. **Mask a service so it cannot be started manually or by other services:**
+```bash
 sudo systemctl mask bluetooth.service ```
-21. **Unmask a previously masked service:** ```bash
+22. **Unmask a previously masked service:**
+```bash
 sudo systemctl unmask bluetooth.service ```
-22. **Show all low-level properties (memory limits, environment variables, restart policy) of a service:** ```bash
+23. **Show all low-level properties (memory limits, environment variables, restart policy) of a service:**
+```bash
 systemctl show nginx ```
-23. **List dependencies required by a service:** ```bash
+24. **List dependencies required by a service:**
+```bash
 systemctl list-dependencies nginx ```
-24. **List all active systemd timers (modern replacement for cron):** ```bash
+25. **List all active systemd timers (modern replacement for cron):**
+```bash
 systemctl list-timers --all ```
-25. **Reset the failed state counter of a service after fixing a crash:** ```bash
+26. **Reset the failed state counter of a service after fixing a crash:**
+```bash
 sudo systemctl reset-failed nginx ```
 ```
 
