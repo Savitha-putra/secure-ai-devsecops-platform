@@ -1,1 +1,2 @@
-
+Git badge link, Please do try
+https://learn.microsoft.com/en-us/training/paths/github-foundations/
