@@ -7,3 +7,6 @@ https://github.com/Savitha-putra/secure-ai-devsecops-platform/blob/main/Document
 
 GitHub link
 https://github.com/Savitha-putra/first_mini_project/tree/testing
+
+Docker Desktop:-
+https://www.docker.com/products/docker-desktop/
