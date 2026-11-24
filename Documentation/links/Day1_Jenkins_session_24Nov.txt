@@ -1,2 +1,9 @@
 Git badge link, Please do try
 https://learn.microsoft.com/en-us/training/paths/github-foundations/
+
+
+our first mini project full documentation is here
+https://github.com/Savitha-putra/secure-ai-devsecops-platform/blob/main/Documentation/actual_project.md
+
+GitHub link
+https://github.com/Savitha-putra/first_mini_project/tree/testing
