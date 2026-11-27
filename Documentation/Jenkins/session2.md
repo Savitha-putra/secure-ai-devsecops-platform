@@ -430,14 +430,1035 @@ Complete these investigations at home before **Session 3** to sharpen your pipel
 9. **Retry & CatchError Steps:** Research the difference between `retry(3) { sh './flaky-network-call.sh' }` and `catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE')`. Give one real-world DevOps use case for each.
 10. **Preparation for Session 3:** Look up **Docker-in-Docker (DinD)** vs. **Docker Socket Mounting (`/var/run/docker.sock`)** on Jenkins agents—we will use Docker containers as ephemeral build agents in Session 3!
 
+# **Session 3: Jenkins and GitHub Integration**
+
+**GitHub filename:** `03-jenkins-github-integration.md`
+
+**Training platform:** Prepare.sh Jenkins Playground\
+**Level:** Beginner to Intermediate\
+**Duration:** 2 Hours\
+**Prerequisite:** Session 2 – Declarative Jenkins Pipeline + 25 practical exercises.
+
+## **1. Session Objectives**
+
+By the end of this session, students should understand:
+
+1. What is GitHub integration with Jenkins?
+2. How Jenkins communicates with GitHub.
+3. What is a Git repository?
+4. What is source-code checkout?
+5. What is the Jenkins Git plugin?
+6. How to configure a GitHub repository in Jenkins.
+7. How to retrieve source code using a Pipeline.
+8. What is a branch?
+9. What are GitHub credentials and why are they required?
+10. What are webhooks?
+11. How code changes can trigger Jenkins builds.
+
+**Today's practical goal:** Build a Jenkins Pipeline that retrieves application source code from GitHub and displays its files.
+
+# **2. What Is GitHub Integration with Jenkins?**
+
+Imagine a developer is working on a Java application.
+
+After making code changes, the developer pushes the changes to GitHub.
+
+The DevOps team wants Jenkins to automatically download the latest source code and start the build process.
+
+This is called Jenkins and GitHub integration.
+
+## **Jenkins + GitHub workflow**
+
+**Developer**
+
+Writes application code
+
+git push
+
+**GitHub Repository**
+
+Stores application source code
+
+Checkout source code
+
+**Jenkins**
+
+Automates CI/CD pipeline
+
+**Build**
+
+**Testing**
+
+**Security Scan**
+
+**Deployment**
+
+# **3. Important Git and GitHub Concepts**
+
+Before connecting Jenkins to GitHub, students must understand these terms.
+
+| Term       | Simple explanation                             |
+| ---------- | ---------------------------------------------- |
+| Git        | Version control system                         |
+| GitHub     | Cloud platform for hosting Git repositories    |
+| Repository | Storage location for project files and history |
+| Clone      | Download a repository                          |
+| Commit     | Save a snapshot of changes in Git              |
+| Push       | Upload commits to a remote repository          |
+| Pull       | Fetch and integrate remote changes             |
+| Branch     | Separate line of development                   |
+| Checkout   | Switch to a branch or retrieve source code     |
+| Remote URL | Address of a Git repository                    |
+
+## **4. Understand Public and Private Repositories**
+
+GitHub repositories can be public or private.
+
+[Yaak Is Now Open Source | Sarah Conway](https://images.openai.com/static-rsc-4/1A7ISj_N0m_fA-E6fgw6iep23q1LR2iAAgWkqv5WSYeUKvh2B2MSkoLKyfTW30a7y89_AEhWY3w11kKF1fxNmG5nWuEocWVGAYgv2o0A7pQU6TGVhqDyM4wYB2aGwFO5TD7uEY3-EU-fZkU2Jx-SyO9eqWQAokueN6NxGIkhR-M?purpose=inline)
+
+**Public repository**
+
+Anyone can access and clone the repository, subject to its settings.
+
+[Optimizing GitHub security at Sendbird: Challenges & key takeaways | Sendbird](https://images.openai.com/static-rsc-4/htyN7Gh_DYACWXSwd8zoLtRZp_cFklx7Se6bivTeEnQLnIKtH9v_I9H455fisZPA7ASNGmx6xS7CHlTBJdYaxM45NHU42OwC0z6LVWyUCXFbYyXXWk_N7GMCeZVVEF0vqLSm4doQN6MuwoRpy7I1Vi1FIcQgA85BKy1ck3zHtZM?purpose=inline)
+
+**Private repository**
+
+Access is restricted to authorized users and applications.
+
+For today's training, start with a public repository. This avoids credential configuration initially.
+
+# **5. Practical 1 – Create Your First GitHub Repository**
+
+Students will create a repository to store their Jenkins training application.
+
+### **Step 1: Open GitHub**
+
+Visit: [GitHub](https://github.com/?utm_source=chatgpt.com)
+
+1. Sign in to GitHub.
+2. Click New Repository.
+3. Repository name:
+
+```
+jenkins-github-training
 ```
 
-<FollowUp label="Ready for me to generate Session 3 (Hours 5–6): Enterprise Agents, Secrets Management & Build Triggers?" query="Generate Session 3 (Hours 5–6): Enterprise Agents, Secrets Management & Build Triggers in clean GitHub Markdown without time-block durations, keeping all other sections from the Master Prompt."/>
+4. Select Public.
+5. Select Add a README file.
+6. Click Create Repository.
 
-<ElicitationsGroup message="Continue your 10-hour Jenkins & GitHub curriculum:">
-  <Elicitation label="Generate Session 3 (Hours 5–6) now" query="Generate Session 3 (Hours 5–6): Enterprise Agents, Secrets Management & Build Triggers in clean GitHub Markdown without time-block durations."/>
-  <Elicitation label="Generate Session 4 (Hours 7–8): DevSecOps & Registry Integration" query="Generate Session 4 (Hours 7–8): DevSecOps Quality Gates & Artifact Registry Integration in clean GitHub Markdown without time-block durations."/>
-  <Elicitation label="Generate complete solution Jenkinsfile for Session 2 Mini-Project" query="Write the complete GitFlow Multibranch Jenkinsfile solution for the Session 2 Take-Home Mini-Project."/>
-</ElicitationsGroup>
+### **Step 2: Create Sample Application Files**
+
+Inside the repository, create the following files.
+
+**File 1:&#x20;**`app.txt`
 
 ```
+Application Name: Banking Application
+Version: 1.0
+Environment: Development
+Developer: Jenkins Training Student
+```
+
+**File 2:&#x20;**`build.sh`
+
+```
+#!/bin/bash
+
+echo "Starting Application Build"
+echo "Application: Banking Application"
+echo "Version: 1.0"
+echo "Build Completed Successfully"
+```
+
+**File 3:&#x20;**`README.md`
+
+```
+# Jenkins GitHub Integration
+
+This repository is created for Jenkins training.
+
+## Application Details
+
+- Application: Banking Application
+- Version: 1.0
+- Environment: Development
+
+## Purpose
+
+Practice Jenkins source code checkout
+and automated CI/CD pipelines.
+```
+
+Commit the files to your repository.
+
+# **6. Practical 2 – Understand Git Clone**
+
+Before configuring Jenkins, understand how Git downloads source code.
+
+If you have Git installed on your Linux machine, execute:
+
+```
+git clone https://github.com/YOUR-USERNAME/jenkins-github-training.git
+```
+
+Replace `YOUR-USERNAME` with your actual GitHub username.
+
+Move inside the repository:
+
+```
+cd jenkins-github-training
+```
+
+List files:
+
+```
+ls -l
+```
+
+Read the application details:
+
+```
+cat app.txt
+```
+
+Check Git repository information:
+
+```
+git status
+```
+
+Check the current branch:
+
+```
+git branch
+```
+
+Check the remote repository:
+
+```
+git remote -v
+```
+
+**Understand the difference:**
+
+- `git clone`: Downloads a repository.
+- `git checkout`: Switches branches or restores files.
+- Jenkins `git` pipeline step: Checks out source code into the Jenkins workspace.
+
+# **7. Practical 3 – Connect Jenkins to a Public GitHub Repository**
+
+This is the most important exercise of today's session.
+
+### **Step 1: Open Jenkins**
+
+Open your Prepare.sh Jenkins Playground.
+
+Create a new Pipeline job:
+
+```
+jenkins-github-checkout
+```
+
+### **Step 2: Configure Pipeline Script**
+
+Use the following Jenkinsfile.
+
+Replace the repository URL with your own public GitHub repository URL.
+
+```
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Downloading Source Code from GitHub'
+
+                git branch: 'main',
+                    url: 'https://github.com/YOUR-USERNAME/jenkins-github-training.git'
+            }
+        }
+
+        stage('List Files') {
+            steps {
+                sh 'pwd'
+                sh 'ls -l'
+            }
+        }
+
+        stage('Read Application Details') {
+            steps {
+                sh 'cat app.txt'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'bash build.sh'
+            }
+        }
+    }
+}
+```
+
+### **Step 3: Execute the Pipeline**
+
+1. Save the pipeline.
+2. Click Build Now.
+3. Open Console Output.
+4. Observe the Checkout stage.
+5. Verify that Jenkins downloads the GitHub files.
+6. Verify that the Build stage executes.
+
+Expected output (illustrative):
+
+```
+Downloading Source Code from GitHub
+
+Checking out Revision ...
+
+Application Name: Banking Application
+Version: 1.0
+Environment: Development
+
+Starting Application Build
+Application: Banking Application
+Version: 1.0
+Build Completed Successfully
+
+Finished: SUCCESS
+```
+
+Success criteria
+
+Jenkins should retrieve the files from GitHub and execute `build.sh`.
+
+**Important:** This requires the Jenkins Git plugin, a compatible Git installation and a Linux/Unix agent for the shell commands.
+
+# **8. Understand Jenkins Workspace**
+
+What happens after Jenkins downloads the GitHub repository?
+
+Jenkins stores the checked-out files in its workspace for that job.
+
+The workspace is the working directory where Jenkins performs its build operations.
+
+Example:
+
+```
+Jenkins
+   |
+   +--- Workspace
+           |
+           +--- app.txt
+           |
+           +--- build.sh
+           |
+           +--- README.md
+```
+
+Execute the following pipeline commands:
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Workspace Information') {
+            steps {
+                echo "Workspace: ${WORKSPACE}"
+
+                sh '''
+                    echo "Files inside workspace:"
+                    ls -la
+
+                    echo "Current directory:"
+                    pwd
+                '''
+            }
+        }
+    }
+}
+```
+
+**Student task:**
+
+1. Execute the pipeline.
+2. Identify the workspace location.
+3. Find the downloaded application files.
+4. Explain why Jenkins needs a workspace.
+
+# **9. Practical 4 – Checkout a Specific GitHub Branch**
+
+In real organizations, developers work with different branches.
+
+Example:
+
+```
+main
+  |
+  +--- development
+  |
+  +--- feature-login
+  |
+  +--- bugfix-payment
+```
+
+Jenkins can retrieve a particular branch.
+
+Example:
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout Development') {
+            steps {
+                git branch: 'development',
+                    url: 'https://github.com/YOUR-USERNAME/jenkins-github-training.git'
+            }
+        }
+
+        stage('Verify Branch') {
+            steps {
+                sh 'git branch --show-current'
+                sh 'git log -1 --oneline'
+            }
+        }
+    }
+}
+```
+
+Before executing, create the `development` branch in your GitHub repository.
+
+**Student task:**
+
+1. Create a branch called `development`.
+2. Add a file called `development.txt`.
+3. Commit the file.
+4. Modify Jenkinsfile to checkout `development`.
+5. Verify that Jenkins retrieves the correct branch.
+
+# **10. Practical 5 – Checkout and Build Automatically**
+
+Let's combine GitHub checkout with the Declarative Pipeline knowledge from Session 2.
+
+```
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'BankingApplication'
+        VERSION = '1.0'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/YOUR-USERNAME/jenkins-github-training.git'
+            }
+        }
+
+        stage('Verify Source Code') {
+            steps {
+                sh '''
+                    echo "Checking source code"
+
+                    ls -la
+
+                    test -f app.txt
+                    test -f build.sh
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'bash build.sh'
+            }
+        }
+
+        stage('Testing') {
+            steps {
+                echo 'Executing Application Tests'
+                sh 'test -f app.txt'
+            }
+        }
+
+        stage('Deployment Simulation') {
+            steps {
+                echo "Deploying ${APP_NAME} version ${VERSION}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'GitHub Integration Pipeline Successful'
+        }
+
+        failure {
+            echo 'GitHub Integration Pipeline Failed'
+        }
+
+        always {
+            echo 'Pipeline Execution Completed'
+        }
+    }
+}
+```
+
+**Student task:** Add a stage named `Code Quality Check` between Build and Testing.
+
+# **11. GitHub Authentication – Public vs Private Repositories**
+
+For a public repository, Jenkins can generally clone source code without authentication.
+
+For private repositories, Jenkins needs authorized access.
+
+The recommended approach is to use Jenkins Credentials.
+
+## **What is a GitHub Personal Access Token?**
+
+A Personal Access Token (PAT) is an authentication token that can be used to access GitHub resources.
+
+It is commonly used for Git operations requiring authentication.
+
+For private repository access, a fine-grained token can be configured with access to the selected repository and the necessary repository permissions, such as Contents: Read-only.
+
+GitHub documentation: [Managing Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens?utm_source=chatgpt.com).
+
+## **Step 1: Create a GitHub Token**
+
+For this exercise:
+
+1. Open GitHub.
+2. Go to Settings.
+3. Open Developer Settings.
+4. Select Personal Access Tokens.
+5. Select Fine-grained tokens.
+6. Create a token.
+7. Restrict repository access to your training repository.
+8. Grant the minimum required permissions.
+9. Generate and copy the token.
+
+Security rule
+
+Never paste the token into a Jenkinsfile, GitHub repository, screenshot or Console Output.
+
+## **Step 2: Configure Jenkins Credentials**
+
+In Jenkins:
+
+1. Open Manage Jenkins.
+2. Open Credentials.
+3. Select the appropriate credential store and domain.
+4. Add Credentials.
+5. Select Username with password.
+6. Enter your GitHub username.
+7. Use the PAT as the password.
+8. Set the ID:
+
+```
+github-training-credentials
+```
+
+9\. Save.
+
+## **Step 3: Use Credentials in Jenkinsfile**
+
+```
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout Private Repository') {
+            steps {
+                git branch: 'main',
+
+                    credentialsId: 'github-training-credentials',
+
+                    url: 'https://github.com/YOUR-USERNAME/PRIVATE-REPOSITORY.git'
+            }
+        }
+
+        stage('Verify Checkout') {
+            steps {
+                sh 'ls -la'
+            }
+        }
+    }
+}
+```
+
+**Student task:** If your playground supports credentials, configure a private repository and test the checkout.
+
+If credential management is unavailable, complete the public repository exercise and document this as a playground limitation.
+
+# **12. What Is a GitHub Webhook?**
+
+So far, we have manually clicked Build Now to start a Jenkins pipeline.
+
+In a production CI/CD environment, we want Jenkins to start automatically when a developer pushes code.
+
+This is where GitHub Webhooks are useful.
+
+A webhook is a mechanism through which GitHub sends an HTTP event notification to an external application such as Jenkins.
+
+## **Webhook workflow**
+
+**Developer**
+
+Changes application code
+
+git push
+
+**GitHub**
+
+Sends webhook notification
+
+HTTP POST event
+
+**Jenkins**
+
+Receives event and triggers build
+
+**CI/CD Pipeline**
+
+Checkout → Build → Test → Deploy
+
+## **Why use Webhooks?**
+
+Without webhooks:
+
+- Engineers may need to manually start builds.
+- Jenkins may periodically check GitHub for changes.
+- Build initiation may be delayed.
+
+With webhooks:
+
+- GitHub notifies Jenkins when configured events occur.
+- Jenkins can start builds based on those notifications.
+- It supports event-driven CI/CD automation.
+
+## **Practical webhook configuration**
+
+This requires a Jenkins endpoint that GitHub can reach over the network.
+
+### **Step 1: Configure Jenkins**
+
+Open your Pipeline job.
+
+Under Build Triggers, select:
+
+```
+GitHub hook trigger for GITScm polling
+```
+
+Save the job.
+
+### **Step 2: Configure GitHub**
+
+Open your GitHub repository.
+
+1. Go to Settings.
+2. Select Webhooks.
+3. Click Add webhook.
+4. Enter the publicly reachable Jenkins webhook endpoint.
+
+For a standard Jenkins GitHub plugin configuration, the endpoint is:
+
+```
+https://YOUR-JENKINS-URL/github-webhook/
+```
+
+5. Select application/json as the content type.
+6. Select the push event.
+7. Save the webhook.
+
+### **Step 3: Test**
+
+1. Modify `app.txt` in GitHub.
+2. Commit the change.
+3. Push the change.
+4. Check the GitHub webhook delivery.
+5. Check Jenkins build history.
+
+**Important:** A browser-based playground may not expose a publicly reachable Jenkins endpoint. In that case, you can learn and configure the job trigger if supported, but cannot complete an external GitHub webhook delivery test. Do not assume a successful manual build proves webhook integration.
+
+# **13. Webhook vs Poll SCM**
+
+These are two different ways Jenkins can detect source-code changes.
+
+| Feature             | Webhook                             | Poll SCM                                 |
+| ------------------- | ----------------------------------- | ---------------------------------------- |
+| Communication       | GitHub sends notification           | Jenkins checks GitHub                    |
+| Trigger             | Event-driven                        | Scheduled checking                       |
+| Speed               | Usually faster                      | Depends on schedule                      |
+| Network requirement | Jenkins must be reachable by GitHub | Jenkins needs outbound repository access |
+| Production usage    | Commonly preferred                  | Useful alternative                       |
+
+Example Poll SCM configuration:
+
+```
+H/5 * * * *
+```
+
+This tells Jenkins to check approximately every five minutes, with Jenkins distributing the polling interval.
+
+In a Pipeline, you can configure polling using:
+
+```
+pipeline {
+    agent any
+
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Checking source code changes'
+            }
+        }
+    }
+}
+```
+
+Note: Polling requires a suitable SCM configuration. For GitHub webhooks, the GitHub integration and job trigger must also be configured correctly.
+
+# **14. Troubleshooting Common Jenkins and GitHub Errors**
+
+A DevOps engineer must know how to troubleshoot integration problems.
+
+| Error                  | Possible reason                     | Troubleshooting                       |
+| ---------------------- | ----------------------------------- | ------------------------------------- |
+| Repository not found   | Incorrect URL or private repository | Verify repository URL and permissions |
+| Authentication failed  | Incorrect credentials               | Verify Jenkins credentials            |
+| Branch not found       | Incorrect branch name               | Check GitHub branches                 |
+| Git command not found  | Git missing on agent                | Install/configure Git                 |
+| Permission denied      | Insufficient repository access      | Verify token permissions              |
+| Checkout failed        | Network or Git plugin issue         | Check agent connectivity and logs     |
+| Webhook not triggering | Jenkins endpoint inaccessible       | Check webhook delivery                |
+| File not found         | Incorrect workspace or filename     | Check `pwd` and `ls -la`              |
+
+### **Troubleshooting Exercise**
+
+Intentionally modify your Jenkinsfile:
+
+```
+git branch: 'wrong-branch',
+    url: 'https://github.com/YOUR-USERNAME/jenkins-github-training.git'
+```
+
+Execute the pipeline.
+
+Students must answer:
+
+1. Why did checkout fail?
+2. How did you identify the error?
+3. What is the correct branch?
+4. How did you fix it?
+
+# **15. Additional Production Concept – Pipeline from SCM**
+
+Until now, we have written the pipeline script directly inside Jenkins.
+
+In production, teams often store the Jenkinsfile in GitHub itself.
+
+For example:
+
+```
+jenkins-github-training/
+│
+├── Jenkinsfile
+├── app.txt
+├── build.sh
+├── README.md
+│
+└── src/
+    └── app.py
+```
+
+Jenkins can retrieve the Jenkinsfile from the Git repository and execute it.
+
+In a Pipeline job:
+
+1. Select New Item.
+2. Enter a job name.
+3. Select Pipeline.
+4. Find Pipeline Definition.
+5. Select Pipeline script from SCM.
+6. Select Git.
+7. Enter the repository URL.
+8. Select the branch.
+9. Enter `Jenkinsfile` as the Script Path.
+10. Save and execute.
+
+This approach is useful because the application code and CI/CD pipeline configuration can be maintained together.
+
+# **16. Complete Practical Challenge**
+
+Today's final assignment
+
+**Scenario: Banking Application CI/CD**
+
+You are a DevOps Engineer responsible for integrating a developer's GitHub repository with Jenkins.
+
+Your requirement:
+
+Whenever Jenkins executes the pipeline, it must:
+
+1. Download source code from GitHub.
+2. Display repository files.
+3. Read application information.
+4. Execute the build script.
+5. Perform basic validation.
+6. Display build information.
+7. Report pipeline success or failure.
+
+### **Final Jenkinsfile**
+
+```
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'BankingApplication'
+        VERSION = '1.0'
+        DEPLOY_ENV = 'Development'
+    }
+
+    stages {
+
+        stage('Checkout Source Code') {
+            steps {
+                echo 'Connecting to GitHub'
+
+                git branch: 'main',
+                    url: 'https://github.com/YOUR-USERNAME/jenkins-github-training.git'
+            }
+        }
+
+        stage('Repository Validation') {
+            steps {
+                sh '''
+                    echo "Checking repository files"
+
+                    pwd
+                    ls -la
+
+                    test -f app.txt
+                    test -f build.sh
+                '''
+            }
+        }
+
+        stage('Application Information') {
+            steps {
+                sh 'cat app.txt'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building ${APP_NAME}"
+
+                sh 'bash build.sh'
+            }
+        }
+
+        stage('Testing') {
+            steps {
+                echo 'Running Application Validation'
+
+                sh 'test -f app.txt'
+            }
+        }
+
+        stage('Deployment Simulation') {
+            steps {
+                echo "Deploying ${APP_NAME}"
+                echo "Version: ${VERSION}"
+                echo "Environment: ${DEPLOY_ENV}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Banking Application Pipeline Successful'
+        }
+
+        failure {
+            echo 'Banking Application Pipeline Failed'
+        }
+
+        always {
+            echo 'Jenkins GitHub Integration Completed'
+        }
+    }
+}
+```
+
+**Expected result:** A successful Jenkins build that retrieves the repository and executes the application build script.
+
+# **17. Student Homework – 10 Exercises**
+
+| No. | Assignment                                                                               | Difficulty |
+| --- | ---------------------------------------------------------------------------------------- | ---------- |
+| 1   | Create a public GitHub repository                                                        | Easy       |
+| 2   | Upload three application files                                                           | Easy       |
+| 3   | Clone the repository using Git                                                           | Easy       |
+| 4   | Configure Jenkins GitHub checkout                                                        | Easy       |
+| 5   | Display all repository files in Jenkins                                                  | Easy       |
+| 6   | Checkout a specific branch                                                               | Medium     |
+| 7   | Execute a shell script downloaded from GitHub                                            | Medium     |
+| 8   | Configure private repository credentials                                                 | Medium     |
+| 9   | Store Jenkinsfile in GitHub and configure Pipeline from SCM                              | Advanced   |
+| 10  | Configure GitHub webhook and test automatic triggering, where the playground supports it | Advanced   |
+
+# **18. Interview Questions**
+
+**Q1. What is GitHub integration with Jenkins?**
+
+It is the process of connecting Jenkins with GitHub to retrieve source code and automate software delivery.
+
+**Q2. What is source-code checkout?**
+
+It is retrieving source code from a version control repository into a working directory.
+
+**Q3. What is the Git plugin in Jenkins?**
+
+It enables Jenkins jobs to interact with Git repositories for operations such as source-code checkout.
+
+**Q4. What is the difference between Git and GitHub?**
+
+Git is a version control system. GitHub is a platform that hosts Git repositories and provides collaboration features.
+
+**Q5. What is a GitHub webhook?**
+
+A webhook sends an HTTP event notification to Jenkins when a configured repository event occurs.
+
+**Q6. What is a Personal Access Token?**
+
+A token used to authenticate and authorize access to GitHub resources.
+
+**Q7. How do you connect Jenkins to a private GitHub repository?**
+
+Configure appropriate Jenkins Credentials and reference the credential ID in the Git checkout configuration.
+
+**Q8. What is Pipeline from SCM?**
+
+It allows Jenkins to retrieve the Jenkinsfile from a source-code management repository such as GitHub.
+
+**Q9. What is the Jenkins workspace?**
+
+The working directory where Jenkins checks out source code and executes build operations.
+
+**Q10. What is the difference between webhook and Poll SCM?**
+
+Webhook is event-driven notification from GitHub. Poll SCM is periodic checking initiated by Jenkins.
+
+# **19. GitHub Training Repository Structure**
+
+Ask students to maintain the following structure:
+
+```
+jenkins-training/
+│
+├── 01-jenkins-architecture.md
+│
+├── 02-declarative-pipeline.md
+│
+├── 02A-25-pipeline-examples.md
+│
+├── 03-jenkins-github-integration.md
+│
+├── application/
+│   ├── app.txt
+│   ├── build.sh
+│   ├── README.md
+│   └── Jenkinsfile
+│
+├── screenshots/
+│   ├── github-repository.png
+│   ├── checkout-success.png
+│   ├── workspace-files.png
+│   ├── build-success.png
+│   └── webhook-configuration.png
+│
+└── README.md
+```
+
+# **20. Session Completion Checklist**
+
+**Student progress**
+
+# **0%**
+
+0 of 13 completed
+
+Understand Git and GitHub concepts
+
+Create a GitHub repository
+
+Create application files
+
+Understand git clone and checkout
+
+Configure Jenkins GitHub checkout
+
+Retrieve source code from GitHub
+
+Understand Jenkins workspace
+
+Checkout a specific branch
+
+Understand private repository credentials
+
+Understand GitHub webhooks
+
+Understand Poll SCM
+
+Complete final banking application pipeline
+
+Upload Jenkinsfile and screenshots to GitHub
+
+## **Trainer's instructions**
+
+Do not move to the next session until students can independently:
+
+- Connect Jenkins to a public GitHub repository.
+- Retrieve source code.
+- Execute a downloaded shell script.
+- Explain Jenkins workspace.
+- Identify and troubleshoot checkout failures.
+- Explain how webhooks trigger builds.
+
+**Important:** Prepare.sh is the training playground. If it does not support external webhooks, private credentials or particular plugins, demonstrate the concepts and document the limitations rather than pretending the integrations were successful.
+
+## **Next session**
+
+Session 4
+
+# **Jenkins Build Parameters, Environment Variables and Credentials**
+
+Students will learn:
+
+- String, Boolean and Choice parameters.
+- Passing values into Jenkins pipelines.
+- Environment variables in production pipelines.
+- Secure credentials management.
+- Parameterized deployments.
+- Building reusable CI/CD workflows.
+
+**Trainer recommendation:** Before Session 4, give students time to complete the GitHub checkout exercises and upload their working Jenkinsfiles to GitHub.
