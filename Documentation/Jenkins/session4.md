@@ -428,14 +428,1151 @@ Complete these investigations at home before **Session 5** (our final capstone s
 9. **Handling False Positives in Trivy (`.trivyignore`):** Suppose Trivy flags a CVE in an unused library and the security team approves an exception. Research how creating a `.trivyignore` file in your Git repository suppresses specific CVE IDs cleanly with audit comments.
 10. **Preparation for Session 5 (Shared Libraries & Capstone):** Imagine your company has 40 microservices, and all 40 have the *exact same* 120-line `Jenkinsfile` we just wrote. If you need to update the Trivy command across all 40 repos, how painful is that? Research **Jenkins Shared Libraries (`vars/*.groovy`)**—in Session 5, we will compress that 120-line `Jenkinsfile` into 10 clean lines!
 
+# **Session 5 – Jenkins Agents, Distributed Builds and Docker Integration**
+
+
+
+Jenkins Training – Session 5
+
+Intermediate Level
+
+
+
+**Duration:** 2 hours\
+**Platform:** Prepare.sh Jenkins Playground (`prepare.sh/jenkins`)\
+**Previous session:** Session 4 – Parameters, Environment Variables and Credentials\
+**Next session:** Session 6 – End-to-End Jenkins CI/CD Project
+
+# **1. Session objectives**
+
+By the end of this session, students should understand:
+
+1. What is a Jenkins Controller?
+2. What is a Jenkins Agent?
+3. Why do we need distributed builds?
+4. What are Jenkins Executors?
+5. What are Jenkins Labels?
+6. How can a pipeline run on a specific agent?
+7. What is the difference between built-in and remote agents?
+8. How Jenkins integrates with Docker.
+9. How to select different agents for different pipeline stages.
+10. How agents are used in enterprise DevOps environments.
+
+# **2. Understand Jenkins Controller and Agent**
+
+Imagine an IT company has 100 developers working on different applications.
+
+All developers submit their code to GitHub. Jenkins receives the requests and executes build pipelines.
+
+If one Jenkins machine handles every build, it can become overloaded.
+
+The solution is to distribute the workload across multiple machines.
+
+This is where Jenkins Agents are useful.
+
+## **Jenkins architecture**
+
+[notes.kodekloud.com](https://notes.kodekloud.com/docs/Jenkins-For-Beginners/Jenkins-Setup-and-Interface/Jenkins-Architecture/page?utm_source=chatgpt.com)
+
+### **Jenkins Controller**
+
+The Controller is the central Jenkins server.
+
+Its responsibilities include:
+
+- Managing Jenkins jobs and pipelines.
+- Scheduling builds.
+- Managing agents.
+- Providing the Jenkins web interface.
+- Storing configuration.
+- Managing build history and results.
+
+### **Jenkins Agent**
+
+An Agent is a machine or execution environment that performs build tasks assigned by the Controller.
+
+An agent can be:
+
+- A Linux virtual machine.
+- A Windows machine.
+- A physical server.
+- A Docker container.
+- A Kubernetes pod.
+
+Examples of tasks performed by agents:
+
+- Compile Java applications.
+- Execute Python tests.
+- Build Docker images.
+- Run security scans.
+- Package application artifacts.
+
+### **Simple comparison**
+
+| Controller                | Agent                          |
+| ------------------------- | ------------------------------ |
+| Manages Jenkins           | Executes assigned jobs         |
+| Schedules builds          | Runs build steps               |
+| Manages agent connections | Connects to Controller         |
+| Stores job configuration  | Provides execution environment |
+| Central management        | Distributed execution          |
+
+**Remember:** The Controller manages the work; Agents perform the work.
+
+# **3. What are Jenkins Executors?**
+
+An Executor is a slot on an agent (or the built-in node) that allows Jenkins to run a build.
+
+Think of an executor as a worker slot.
+
+Example:
+
+A Jenkins Linux agent has four executors.
+
+It can run up to four builds concurrently, assuming sufficient resources and no other scheduling restrictions.
+
+[notes.kodekloud.com](https://notes.kodekloud.com/docs/Advanced-Jenkins/Agents-and-Nodes-in-Jenkins/Utilize-Agents-in-Jobs/page?utm_source=chatgpt.com)
+
+### **Example**
+
+| Agent           | Executors | Maximum concurrent builds |
+| --------------- | --------- | ------------------------- |
+| Linux-Agent-1   | 2         | 2                         |
+| Linux-Agent-2   | 4         | 4                         |
+| Windows-Agent-1 | 1         | 1                         |
+
+Total available executor slots: 7.
+
+**Production understanding:** Setting too many executors on a small machine can cause CPU and memory pressure. Executor counts should be based on workload and available resources.
+
+# **4. What are Jenkins Labels?**
+
+Labels help Jenkins identify which agents are suitable for a particular job.
+
+Imagine you have three agents:
+
+| Agent name    | Label     | Purpose        |
+| ------------- | --------- | -------------- |
+| Linux-Agent   | `linux`   | Linux builds   |
+| Windows-Agent | `windows` | Windows builds |
+| Docker-Agent  | `docker`  | Docker builds  |
+
+You can tell Jenkins to run a pipeline on an agent with a particular label.
+
+Example:
+
+```
+pipeline {
+    agent {
+        label 'linux'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Running on Linux agent'
+            }
+        }
+    }
+}
 ```
 
-<FollowUp label="Ready for me to generate Session 5 (Hours 9–10): Enterprise Architecture (Shared Libraries) & End-to-End Capstone?" query="Generate Session 5 (Hours 9–10): Enterprise Architecture (Shared Libraries) & End-to-End Capstone in clean GitHub Markdown without time-block durations, keeping all other sections from the Master Prompt."/>
+Jenkins will look for an available agent matching the `linux` label.
 
-<ElicitationsGroup message="Complete your 10-hour Jenkins & GitHub curriculum:">
-  <Elicitation label="Generate Session 5 (Hours 9–10): Shared Libraries & Capstone" query="Generate Session 5 (Hours 9–10): Enterprise Architecture (Shared Libraries) & End-to-End Capstone in clean GitHub Markdown without time-block durations."/>
-  <Elicitation label="Create a multi-stage Dockerfile for Session 4 Lab" query="Provide a complete Spring Boot / Java multi-stage Dockerfile and sample pom.xml with SonarQube plugin config for the Session 4 DevSecOps lab."/>
-  <Elicitation label="Compare Amazon ECR, Docker Hub, GHCR, and JFrog Artifactory" query="Create a comparison table of Amazon ECR, Docker Hub, GitHub Container Registry (GHCR), and JFrog Artifactory for enterprise DevOps teams."/>
-</ElicitationsGroup>
+**Important:** A matching agent must exist, be online and have an available executor. Otherwise, the pipeline waits or cannot run.
+
+# **5. Practical 1 – Run a pipeline on any available agent**
+
+**Objective:** Understand the `agent any` directive.
 
 ```
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Running build on an available Jenkins agent'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Executing application tests'
+            }
+        }
+    }
+}
+```
+
+### **Understand the code**
+
+- `agent any` allows Jenkins to select any eligible available agent.
+- `stages` contains the pipeline stages.
+- `steps` contains the commands to execute.
+
+**Student task:** Run the pipeline and observe its execution.
+
+# **6. Practical 2 – Use a specific agent label**
+
+**Objective:** Run a pipeline on a Linux-labelled agent.
+
+```
+pipeline {
+    agent {
+        label 'linux'
+    }
+
+    stages {
+        stage('Linux Build') {
+            steps {
+                echo 'Running on Linux agent'
+            }
+        }
+    }
+}
+```
+
+**Important:** This will work only if an online Jenkins agent with the `linux` label exists.
+
+In Prepare.sh, if you cannot configure agents, treat this as a Jenkinsfile study exercise.
+
+# **7. Practical 3 – Run different stages on different agents**
+
+**Objective:** Understand stage-level agent selection.
+
+Imagine:
+
+- Build runs on Linux.
+- Testing runs on Windows.
+- Packaging runs on Docker.
+
+```
+pipeline {
+    agent none
+
+    stages {
+        stage('Build') {
+            agent {
+                label 'linux'
+            }
+
+            steps {
+                echo 'Building application on Linux'
+            }
+        }
+
+        stage('Testing') {
+            agent {
+                label 'windows'
+            }
+
+            steps {
+                echo 'Testing application on Windows'
+            }
+        }
+
+        stage('Packaging') {
+            agent {
+                label 'docker'
+            }
+
+            steps {
+                echo 'Packaging application using Docker agent'
+            }
+        }
+    }
+}
+```
+
+### **Understand&#x20;**`agent none`
+
+`agent none` means the pipeline does not reserve one global agent.
+
+Each stage must specify its own agent.
+
+**Production relevance:** Different pipeline stages may require different operating systems, tools or execution environments.
+
+# **8. Practical 4 – Understand workspace on an agent**
+
+Each Jenkins agent provides a workspace where Jenkins checks out source code and runs build commands.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Workspace Information') {
+            steps {
+                echo "Job Name: ${env.JOB_NAME}"
+                echo "Build Number: ${env.BUILD_NUMBER}"
+                echo "Workspace: ${env.WORKSPACE}"
+            }
+        }
+    }
+}
+```
+
+### **What is a workspace?**
+
+A workspace is a directory on the agent where Jenkins performs the build.
+
+Example:
+
+```
+/var/lib/jenkins/workspace/my-pipeline/
+```
+
+A Windows example might look like:
+
+```
+C:\Jenkins\workspace\my-pipeline\
+```
+
+The actual location depends on the agent configuration.
+
+# **9. Practical 5 – Clean the workspace**
+
+**Objective:** Remove files from the current workspace before starting a new build.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+                echo 'Workspace cleaned'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Starting a fresh build'
+            }
+        }
+    }
+}
+```
+
+**Important:** `cleanWs()` requires the Workspace Cleanup plugin. If unavailable, use the following alternative on a Linux agent:
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+                echo 'Workspace cleaned using deleteDir'
+            }
+        }
+    }
+}
+```
+
+`deleteDir()` is a Pipeline step that deletes the current workspace directory contents.
+
+**Production relevance:** Old files from previous builds can sometimes affect a new build. Workspace cleanup helps avoid stale artifacts and configuration.
+
+# **10. Practical 6 – Execute Linux commands on an agent**
+
+**Objective:** Run Linux system commands from Jenkins.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Linux Commands') {
+            steps {
+                sh '''
+                    echo "Current User:"
+                    whoami
+
+                    echo "Current Directory:"
+                    pwd
+
+                    echo "Hostname:"
+                    hostname
+
+                    echo "Disk Usage:"
+                    df -h
+                '''
+            }
+        }
+    }
+}
+```
+
+### **Commands explained**
+
+| Command    | Purpose                    |
+| ---------- | -------------------------- |
+| `whoami`   | Displays current user      |
+| `pwd`      | Displays current directory |
+| `hostname` | Displays machine hostname  |
+| `df -h`    | Displays disk usage        |
+
+**Note:** This requires a Linux agent. If your Prepare.sh environment does not support `sh`, study the pipeline and try it later on a Linux Jenkins agent.
+
+# **11. Practical 7 – Execute Windows commands on an agent**
+
+**Objective:** Run Windows commands through Jenkins.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Windows Commands') {
+            steps {
+                bat '''
+                    echo Current User
+                    whoami
+
+                    echo Computer Name
+                    hostname
+
+                    echo Current Directory
+                    cd
+
+                    echo System Information
+                    systeminfo
+                '''
+            }
+        }
+    }
+}
+```
+
+**Remember:**
+
+- `sh` executes shell commands on Unix/Linux agents.
+- `bat` executes batch commands on Windows agents.
+- The agent must have the appropriate operating system.
+
+# **12. What is Docker integration with Jenkins?**
+
+Docker allows applications and their dependencies to run inside containers.
+
+Instead of installing Java, Maven, Python and other tools directly on every Jenkins machine, you can use Docker images that already contain the required tools.
+
+[Configure Docker Container as Build Slave for Jenkins | by Gaurav Gupta | by Gaurav Gupta | Medium](https://images.openai.com/static-rsc-4/p0xmjqywaPITNwnVKHBJQTKN_spjJMQTqzHd9RPsWvLvsBrVikuJBwKy8LF_Es2gJy_dJtgjr2T1AcUjGXzWRMRoMcd-GwbCMEK26f9fVKoRumuCduk-Uz9RdzkIgBr0T2Fxj2hxsx0_E0ktroWTs2A-t2LkPyrTHEvym-hdLMA?purpose=inline)
+
+[techq.medium.com](https://techq.medium.com/how-to-configure-docker-container-as-build-slave-for-jenkins-a7b480c96d0?utm_source=chatgpt.com)
+
+### **Real-world example**
+
+Imagine your team develops:
+
+- Java application.
+- Python application.
+- Node.js application.
+
+Each application requires different tools.
+
+| Application | Required build tool |
+| ----------- | ------------------- |
+| Java        | Maven               |
+| Python      | Python and pip      |
+| Node.js     | Node and npm        |
+
+With Docker, Jenkins can use different container images for each build environment.
+
+### **Advantages of Docker-based builds**
+
+1. Consistent build environments.
+2. Reduced dependency conflicts.
+3. Easier tool version management.
+4. Better isolation between builds.
+5. Reproducible build environments.
+
+# **13. Practical 8 – Run a pipeline inside a Docker image**
+
+**Objective:** Use a Docker image as the pipeline execution environment.
+
+```
+pipeline {
+    agent {
+        docker {
+            image 'ubuntu:latest'
+        }
+    }
+
+    stages {
+        stage('Check Environment') {
+            steps {
+                sh 'cat /etc/os-release'
+            }
+        }
+
+        stage('Install Information') {
+            steps {
+                sh 'echo "Running inside Docker container"'
+            }
+        }
+    }
+}
+```
+
+**Requirements:**
+
+- Docker Pipeline plugin.
+- A Jenkins agent with Docker available.
+- Permission to access the Docker daemon.
+- Ability to pull the image.
+
+This is not guaranteed to run in Prepare.sh.
+
+# **14. Practical 9 – Build a Java application using a Docker agent**
+
+**Objective:** Use a Maven Docker image for a Java build.
+
+```
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    stages {
+        stage('Check Java') {
+            steps {
+                sh 'java -version'
+            }
+        }
+
+        stage('Check Maven') {
+            steps {
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Ready to build Java application'
+            }
+        }
+    }
+}
+```
+
+**Production relevance:** Build tools are defined in the container image instead of relying on manual installation on every agent.
+
+# **15. Practical 10 – Different Docker images for different stages**
+
+**Objective:** Use different execution environments in the same pipeline.
+
+```
+pipeline {
+    agent none
+
+    stages {
+        stage('Java Build') {
+            agent {
+                docker {
+                    image 'maven:3.9-eclipse-temurin-17'
+                }
+            }
+
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
+                echo 'Java build environment ready'
+            }
+        }
+
+        stage('Python Check') {
+            agent {
+                docker {
+                    image 'python:3.12'
+                }
+            }
+
+            steps {
+                sh 'python --version'
+                sh 'pip --version'
+                echo 'Python environment ready'
+            }
+        }
+    }
+}
+```
+
+**Understand:** Different stages can use different Docker images and tool versions.
+
+# **16. Practical 11 – Docker image build using Jenkins**
+
+**Objective:** Understand how Jenkins can execute Docker build commands.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t my-application:1.0 .
+                '''
+            }
+        }
+
+        stage('List Docker Images') {
+            steps {
+                sh '''
+                    docker images
+                '''
+            }
+        }
+    }
+}
+```
+
+This requires:
+
+- Docker CLI on the agent.
+- Access to a Docker daemon.
+- A valid Dockerfile in the workspace.
+- Appropriate permissions.
+
+# **17. Practical 12 – Docker image tagging using parameters**
+
+**Objective:** Create a dynamic Docker image tag.
+
+```
+pipeline {
+    agent any
+
+    parameters {
+        string(
+            name: 'APP_VERSION',
+            defaultValue: '1.0.0'
+        )
+    }
+
+    environment {
+        IMAGE_NAME = 'my-application'
+    }
+
+    stages {
+        stage('Generate Image Tag') {
+            steps {
+                script {
+                    def imageTag = "${env.IMAGE_NAME}:${params.APP_VERSION}"
+
+                    echo "Docker Image: ${imageTag}"
+                }
+            }
+        }
+    }
+}
+```
+
+Example output:
+
+```
+Docker Image: my-application:1.0.0
+```
+
+**Production relevance:** Versioned image tags help teams identify which application version was built and deployed.
+
+# **18. Practical 13 – Parallel builds using agents**
+
+**Objective:** Run multiple stages in parallel.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Parallel Testing') {
+            parallel {
+                stage('Unit Tests') {
+                    steps {
+                        echo 'Executing unit tests'
+                    }
+                }
+
+                stage('Integration Tests') {
+                    steps {
+                        echo 'Executing integration tests'
+                    }
+                }
+
+                stage('Security Tests') {
+                    steps {
+                        echo 'Executing security test simulation'
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+### **Why use parallel execution?**
+
+Suppose:
+
+- Unit tests take 5 minutes.
+- Integration tests take 10 minutes.
+- Security tests take 8 minutes.
+
+Running them sequentially can take approximately 23 minutes.
+
+Running independent tasks in parallel can reduce the overall time, subject to executor availability and resource capacity.
+
+# **19. Practical 14 – Run parallel stages on different agents**
+
+**Objective:** Run Linux and Windows testing simultaneously.
+
+```
+pipeline {
+    agent none
+
+    stages {
+        stage('Cross Platform Testing') {
+            parallel {
+                stage('Linux Testing') {
+                    agent {
+                        label 'linux'
+                    }
+
+                    steps {
+                        echo 'Running Linux tests'
+                    }
+                }
+
+                stage('Windows Testing') {
+                    agent {
+                        label 'windows'
+                    }
+
+                    steps {
+                        echo 'Running Windows tests'
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+This requires online Linux and Windows agents with the specified labels.
+
+# **20. Practical 15 – Select an agent based on a parameter**
+
+**Objective:** Select the required build agent using a pipeline parameter.
+
+```
+pipeline {
+    agent none
+
+    parameters {
+        choice(
+            name: 'BUILD_PLATFORM',
+            choices: ['linux', 'windows'],
+            description: 'Choose build platform'
+        )
+    }
+
+    stages {
+        stage('Platform Build') {
+            agent {
+                label "${params.BUILD_PLATFORM}"
+            }
+
+            steps {
+                echo "Selected platform: ${params.BUILD_PLATFORM}"
+            }
+        }
+    }
+}
+```
+
+**Understand:** Jenkins evaluates the selected label and looks for an appropriate agent.
+
+# **21. Practical 16 – Archive artifacts from an agent**
+
+**Objective:** Save build output so it can be downloaded later.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Create Artifact') {
+            steps {
+                writeFile(
+                    file: 'build-info.txt',
+                    text: 'Application build completed'
+                )
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'build-info.txt'
+            }
+        }
+    }
+}
+```
+
+**Production relevance:** Jenkins can archive JAR, WAR, ZIP, reports and other build outputs.
+
+# **22. Practical 17 – Transfer files between stages**
+
+**Objective:** Understand the importance of artifact storage when stages use different agents.
+
+```
+pipeline {
+    agent none
+
+    stages {
+        stage('Build') {
+            agent {
+                label 'linux'
+            }
+
+            steps {
+                writeFile(
+                    file: 'application.txt',
+                    text: 'Application build output'
+                )
+
+                stash(
+                    name: 'application-files',
+                    includes: 'application.txt'
+                )
+            }
+        }
+
+        stage('Test') {
+            agent {
+                label 'windows'
+            }
+
+            steps {
+                unstash 'application-files'
+
+                echo 'Application files received for testing'
+            }
+        }
+    }
+}
+```
+
+**Important:** `stash` and `unstash` transfer files between pipeline stages, typically within the same pipeline run. They are intended for relatively small files. For large artifacts or long-term storage, use an artifact repository such as Nexus or Artifactory.
+
+# **23. Practical 18 – Restrict builds to an appropriate agent**
+
+**Objective:** Understand how labels can help separate workloads.
+
+```
+pipeline {
+    agent {
+        label 'linux && docker'
+    }
+
+    stages {
+        stage('Docker Build') {
+            steps {
+                echo 'Running on an agent with linux and docker labels'
+            }
+        }
+    }
+}
+```
+
+The agent must have both labels.
+
+**Production example:** Teams may reserve specific agents for Docker builds, security scanning or deployment tasks.
+
+# **24. Practical 19 – Retry a build step**
+
+**Objective:** Retry a failed operation.
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Download Dependency') {
+            steps {
+                retry(3) {
+                    echo 'Attempting dependency download'
+                }
+            }
+        }
+    }
+}
+```
+
+**Important:** This demonstrates retry syntax, not an actual download. In production, place the real download command inside `retry` and handle permanent errors separately.
+
+# **25. Practical 20 – Complete Jenkins distributed build simulation**
+
+**Objective:** Understand how a pipeline can divide work across different execution environments.
+
+```
+pipeline {
+    agent none
+
+    stages {
+        stage('Linux Build') {
+            agent {
+                label 'linux'
+            }
+
+            steps {
+                echo 'Building application on Linux agent'
+            }
+        }
+
+        stage('Windows Testing') {
+            agent {
+                label 'windows'
+            }
+
+            steps {
+                echo 'Testing application on Windows agent'
+            }
+        }
+
+        stage('Docker Packaging') {
+            agent {
+                label 'docker'
+            }
+
+            steps {
+                echo 'Packaging application using Docker agent'
+            }
+        }
+
+        stage('Final Report') {
+            agent any
+
+            steps {
+                echo 'Distributed build pipeline completed'
+            }
+        }
+    }
+}
+```
+
+**Important:** This is a distributed-build example, not a complete artifact-transfer pipeline. Each stage must have the necessary source files and artifacts available on its selected agent. In real projects, use `stash`/`unstash` or an artifact repository to transfer build outputs.
+
+# **26. Prepare.sh playground – What can students practise?**
+
+Since your students are using Prepare.sh, divide the exercises into two categories.
+
+| Topic                       | Prepare.sh practice                    |
+| --------------------------- | -------------------------------------- |
+| Declarative pipeline syntax | Try if Pipeline job is available       |
+| `agent any`                 | Try                                    |
+| `agent none`                | Try                                    |
+| Echo and stage execution    | Try                                    |
+| Environment variables       | Try                                    |
+| Workspace commands          | Depends on available agent             |
+| Linux shell commands        | Requires Linux shell agent             |
+| Windows batch commands      | Requires Windows agent                 |
+| Custom agent configuration  | Requires Jenkins administration access |
+| Remote agents               | Requires agent infrastructure          |
+| Docker agent                | Requires Docker integration            |
+| Parallel stages             | Try if supported                       |
+| Stash and unstash           | Try if supported                       |
+| Credentials                 | Requires Credentials access            |
+
+Do not spend students' time troubleshooting unavailable infrastructure. Use the playground for syntax and pipeline concepts, and a real Jenkins lab for agent registration, Docker and distributed builds.
+
+# **27. Real-world DevOps scenario**
+
+Imagine a banking company has three Jenkins agents:
+
+**Jenkins Controller**
+
+Schedules and manages builds
+
+Assigns build tasks
+
+**Linux**
+
+Java build
+
+linux
+
+**Windows**
+
+.NET tests
+
+windows
+
+**Docker**
+
+Image packaging
+
+docker
+
+### **Typical workflow**
+
+1. Developer pushes code to GitHub.
+2. Jenkins Controller receives the build trigger.
+3. Linux Agent compiles the Java application.
+4. Windows Agent executes Windows-specific tests.
+5. Docker Agent packages the application into a container image.
+6. Jenkins records the build result.
+7. Deployment pipeline publishes the approved artifact.
+
+**Interview question:** Why should a company use multiple Jenkins agents instead of running every build on the Controller?
+
+Expected answer: To distribute workloads, support different operating systems and tools, improve scalability and isolate build environments.
+
+# **28. Student assignment**
+
+Create a Jenkins pipeline named:
+
+`session-05-jenkins-agents-docker`
+
+Students should demonstrate:
+
+1. `agent any`.
+2. `agent none`.
+3. Agent labels.
+4. Stage-level agents.
+5. Jenkins environment variables.
+6. Workspace information.
+7. Linux commands.
+8. Windows commands.
+9. Docker agent syntax.
+10. Parallel stages.
+11. Artifact archiving.
+12. Stash and unstash.
+13. Distributed build architecture.
+
+For Prepare.sh, students can demonstrate supported pipeline syntax and document unsupported agent/Docker tasks rather than pretending they executed them.
+
+# **29. Interview questions**
+
+1. What is a Jenkins Controller?
+2. What is a Jenkins Agent?
+3. What is the difference between Controller and Agent?
+4. What is an Executor?
+5. What is a Jenkins Label?
+6. What is the purpose of `agent any`?
+7. What does `agent none` mean?
+8. What is a Jenkins workspace?
+9. Can a Jenkins pipeline run on Windows and Linux?
+10. What is distributed building?
+11. Why do we need Docker integration with Jenkins?
+12. What is the Docker Pipeline plugin?
+13. What is the difference between a Docker container and a Jenkins Agent?
+14. What is the purpose of `stash` and `unstash`?
+15. How can Jenkins execute multiple stages in parallel?
+16. What happens if an agent goes offline during a build?
+17. Why should too many executors not be configured on a small machine?
+18. How can you assign a pipeline to a particular agent?
+19. How do you transfer artifacts between agents?
+20. What are the advantages of distributed builds in enterprise environments?
+
+# **30. GitHub repository structure**
+
+Save your exercises in the training repository:
+
+```
+jenkins-training/
+│
+├── Session-01-Jenkins-Basics/
+├── Session-02-Declarative-Pipeline/
+├── Session-03-Jenkins-GitHub-Integration/
+├── Session-04-Parameters-Environment-Credentials/
+│
+└── Session-05-Agents-Distributed-Builds-Docker/
+    │
+    ├── README.md
+    │
+    ├── Level-01-Agent-Basics/
+    │   ├── 01-agent-any.Jenkinsfile
+    │   ├── 02-linux-agent.Jenkinsfile
+    │   ├── 03-stage-level-agents.Jenkinsfile
+    │   ├── 04-workspace.Jenkinsfile
+    │   ├── 05-clean-workspace.Jenkinsfile
+    │   ├── 06-linux-commands.Jenkinsfile
+    │   └── 07-windows-commands.Jenkinsfile
+    │
+    ├── Level-02-Docker-Integration/
+    │   ├── 08-docker-agent.Jenkinsfile
+    │   ├── 09-maven-docker-agent.Jenkinsfile
+    │   ├── 10-multiple-docker-images.Jenkinsfile
+    │   ├── 11-docker-image-build.Jenkinsfile
+    │   └── 12-docker-image-tagging.Jenkinsfile
+    │
+    ├── Level-03-Distributed-Builds/
+    │   ├── 13-parallel-builds.Jenkinsfile
+    │   ├── 14-parallel-agents.Jenkinsfile
+    │   ├── 15-parameter-agent-selection.Jenkinsfile
+    │   ├── 16-archive-artifacts.Jenkinsfile
+    │   ├── 17-stash-unstash.Jenkinsfile
+    │   ├── 18-agent-labels.Jenkinsfile
+    │   └── 19-retry-build.Jenkinsfile
+    │
+    └── Level-04-Enterprise-Example/
+        └── 20-distributed-build-simulation.Jenkinsfile
+```
+
+# **31. Session completion checklist**
+
+**Training progress**
+
+# **0/13**
+
+Understand Jenkins Controller and Agent
+
+Understand Executors and Labels
+
+Understand agent any and agent none
+
+Run a pipeline using an agent label
+
+Understand stage-level agent selection
+
+Understand Jenkins workspace
+
+Practise Linux and Windows agent commands
+
+Understand Docker-based build environments
+
+Understand parallel execution
+
+Understand stash and unstash
+
+Understand artifact archiving
+
+Document Prepare.sh limitations
+
+Upload Jenkinsfiles and screenshots to GitHub
+
+# **End of Session 5**
+
+5 of 6 core sessions covered
+
+**Next session – Session 6: End-to-End Jenkins CI/CD Project**
+
+Students will combine everything learned:
+
+- GitHub source-code integration.
+- Jenkins Declarative Pipeline.
+- Parameters and credentials.
+- Build and testing.
+- Docker image creation.
+- DevSecOps scanning stages.
+- Artifact management.
+- Deployment simulation.
+- Final GitHub project documentation.
+
+This final session will bring the Jenkins training together into one practical project that students can demonstrate in interviews and add to their GitHub portfolios.
