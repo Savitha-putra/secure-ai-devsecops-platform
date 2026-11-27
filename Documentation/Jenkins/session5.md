@@ -445,15 +445,555 @@ Continue building your portfolio after completing this 10-hour curriculum with t
 8. **Automated Semantic Versioning & Changelog Generation:** Research how CI pipelines inspect Conventional Commits (`feat:`, `fix:`, `BREAKING CHANGE:`) to automatically bump Git tags (`v1.0.0` $\rightarrow$ `v1.1.0`) and generate GitHub Release notes upon merging to `main`.
 9. **Observability for Jenkins (`Prometheus` + `Grafana`):** How do SREs monitor Jenkins Controller health, build queue wait times, and executor saturation? Install the **Prometheus Metrics Plugin** (`/prometheus` endpoint) and explore the official Grafana dashboard for Jenkins.
 10. **Portfolio & Interview Readiness:** Update your LinkedIn profile and GitHub `README.md` with your **Capstone Architecture Diagram**, explaining how you reduced 130-line `Jenkinsfile`s to 7 lines using Shared Libraries while enforcing SonarQube and Trivy DevSecOps gates!
+# **Jenkins Training – Session 6**
+
+## **End-to-End Jenkins CI/CD Project for Beginners**
+
+**Course:** Practical Jenkins Training for Freshers\
+**Session:** 6 of 6\
+**Level:** Beginner to Intermediate\
+**Platform:** Prepare.sh Jenkins Playground (`prepare.sh/jenkins`)\
+**Duration:** 2 hours\
+**Goal:** Build a complete CI/CD pipeline and understand how Jenkins automates application delivery in a real DevOps environment.
+
+# **1. What Will We Build Today?**
+
+In the previous sessions, we learned Jenkins jobs, pipelines, GitHub integration, parameters, credentials, agents, and Docker integration.
+
+Today, we will combine those concepts into one project.
+
+Imagine a developer has written a Python application and pushed the code to GitHub.
+
+Our job as DevOps engineers is to automate the process:
+
+1. Get the latest code from GitHub.
+2. Inspect the source code.
+3. Build the application.
+4. Run tests.
+5. Perform a simulated security check.
+6. Package the application.
+7. Archive the build artifact.
+8. Simulate deployment.
+9. Generate a final pipeline report.
+
+**End-to-end CI/CD workflow**
+
+**Developer pushes code to GitHub**
+
+**Jenkins Checkout**
+
+**Build Application**
+
+**Run Unit Tests**
+
+**Security Scan Simulation**
+
+**Package and Archive Artifact**
+
+**Deployment Simulation**
+
+**Pipeline Success**
+
+**Important:** We will build a pipeline that can be practised in Prepare.sh. Security scanning and deployment will initially be simulations. Actual Checkmarx, SonarQube, Docker builds, and server deployments require their respective tools, plugins, credentials, and infrastructure.
+
+# **2. Understand the Project**
+
+We will use a simple Python application.
+
+**Project name:** `jenkins-cicd-training`
+
+The application will have:
+
+- A Python source file.
+- A basic test file.
+- A Jenkins pipeline.
+- A README file.
+
+Our target repository structure:
 
 ```
+jenkins-cicd-training/
+│
+├── Jenkinsfile
+├── app.py
+├── test_app.py
+└── README.md
+```
 
-<FollowUp label="Want me to generate a complete GitHub repository starter pack (sample Java app, Dockerfile, Shared Library, and README) for your students' Capstone?" query="Generate a complete, ready-to-push GitHub repository starter pack for the Session 5 Capstone including a minimal pom.xml, Dockerfile, vars/standardJavaPipeline.groovy, and microservice Jenkinsfile."/>
+### **What does each file do?**
 
-<ElicitationsGroup message="Wrap up or expand your EdgeX Learning Jenkins & GitHub module:">
-  <Elicitation label="Generate complete Capstone starter code files" query="Provide complete starter code files (pom.xml, HelloApp.java, Dockerfile, vars/standardJavaPipeline.groovy, and Jenkinsfile) so students can run the Session 5 Capstone immediately."/>
-  <Elicitation label="Create a 25-question Final Assessment Exam for students" query="Create a 25-question comprehensive final exam covering all 5 sessions of the Jenkins & GitHub curriculum with an answer key for grading students."/>
-  <Elicitation label="Build an interview prep Q&A sheet for Jenkins & DevSecOps" query="Create a top 20 real-world Jenkins & DevSecOps interview questions and answers guide tailored for freshers and junior DevOps engineers."/>
-</ElicitationsGroup>
+| File          | Purpose                          |
+| ------------- | -------------------------------- |
+| `Jenkinsfile` | Defines the CI/CD pipeline       |
+| `app.py`      | Contains application code        |
+| `test_app.py` | Contains basic application tests |
+| `README.md`   | Explains the project             |
+
+# **3. Create the Python Application**
+
+Create a GitHub repository named:
 
 ```
+jenkins-cicd-training
+```
+
+Inside the repository, create `app.py`.
+
+### **app.py**
+
+```
+def welcome_message():    return "Welcome to Jenkins CI/CD Training!"def add_numbers(a, b):    return a + bif __name__ == "__main__":    print(welcome_message())    print("Addition Result:", add_numbers(10, 20))
+```
+
+### **Understand the code**
+
+`welcome_message()` returns a welcome message.
+
+`add_numbers(a, b)` accepts two numbers and returns their sum.
+
+The last section executes when we run the Python file directly.
+
+Expected output:
+
+```
+Welcome to Jenkins CI/CD Training!
+Addition Result: 30
+```
+
+# **4. Create the Test File**
+
+Create another file called `test_app.py`.
+
+```
+from app import welcome_message, add_numbersdef test_welcome_message():    assert welcome_message() == "Welcome to Jenkins CI/CD Training!"def test_add_numbers():    assert add_numbers(10, 20) == 30def test_add_zero():    assert add_numbers(10, 0) == 10print("All application tests passed!")
+```
+
+### **What is testing?**
+
+Testing checks whether our application behaves as expected.
+
+For example:
+
+```
+assert add_numbers(10, 20) == 30
+```
+
+This checks whether adding 10 and 20 returns 30.
+
+If the result is incorrect, the assertion fails.
+
+**Production relevance:** Automated tests help detect application defects before code reaches production.
+
+# **5. Create the Jenkinsfile**
+
+This is the main part of today's session.
+
+Create a file named exactly:
+
+```
+Jenkinsfile
+```
+
+Add the following pipeline:
+
+```
+pipeline {
+
+    agent any
+
+    environment {
+        APP_NAME = 'jenkins-cicd-training'
+        BUILD_VERSION = '1.0'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out application source code'
+                checkout scm
+            }
+        }
+
+        stage('Inspect Repository') {
+            steps {
+                echo 'Inspecting repository files'
+                sh 'ls -la'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building Python application'
+                sh 'python3 -m py_compile app.py'
+                echo 'Build completed successfully'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running application tests'
+                sh 'python3 test_app.py'
+            }
+        }
+
+        stage('Security Scan Simulation') {
+            steps {
+                echo 'Starting security scan simulation'
+                echo 'Checking source code for security issues'
+                echo 'Security scan simulation completed'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo 'Packaging application'
+                sh 'mkdir -p build'
+                sh 'cp app.py build/'
+                sh 'cp test_app.py build/'
+                sh 'echo Jenkins CI/CD package created > build/build-info.txt'
+                sh 'cat build/build-info.txt'
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                echo 'Archiving application package'
+                archiveArtifacts artifacts: 'build/*', fingerprint: true
+            }
+        }
+
+        stage('Deploy Simulation') {
+            steps {
+                echo 'Starting deployment simulation'
+                echo 'Application package is ready for deployment'
+                echo 'Deployment simulation completed'
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'CI/CD Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'CI/CD Pipeline failed. Check the console output.'
+        }
+
+        always {
+            echo 'Pipeline execution finished'
+            echo 'Application: jenkins-cicd-training'
+        }
+    }
+}
+```
+
+## **6. Understand Each Pipeline Stage**
+
+| Stage                    | What happens?              | Real-world DevOps purpose         |
+| ------------------------ | -------------------------- | --------------------------------- |
+| Checkout                 | Downloads source code      | Gets latest developer changes     |
+| Inspect Repository       | Lists project files        | Checks workspace contents         |
+| Build                    | Validates Python syntax    | Finds build or compilation errors |
+| Test                     | Executes tests             | Detects application defects       |
+| Security Scan Simulation | Prints scan messages       | Represents security scanning      |
+| Package                  | Creates build directory    | Prepares deployable files         |
+| Archive Artifact         | Stores build files         | Preserves build output            |
+| Deploy Simulation        | Prints deployment messages | Represents application deployment |
+
+### **Important Jenkins concepts**
+
+`pipeline`
+
+Defines the entire Jenkins Declarative Pipeline.
+
+`agent any`
+
+Allows Jenkins to select any available agent to run the pipeline.
+
+`environment`
+
+Defines environment variables available to pipeline steps.
+
+`stages`
+
+Groups the pipeline into logical stages.
+
+`steps`
+
+Contains the actual commands or Jenkins steps.
+
+`post`
+
+Defines actions to execute after pipeline completion.
+
+# **7. Execute the Pipeline in Prepare.sh**
+
+Follow these steps:
+
+1. Open the Prepare.sh Jenkins playground.
+2. Open the Jenkins dashboard.
+3. Create a new Pipeline job.
+4. Give it the name `jenkins-cicd-training`.
+5. Select the Pipeline configuration option.
+6. Choose the Pipeline script option if available.
+7. Paste the Jenkinsfile content into the script editor.
+8. Save the pipeline.
+9. Click **Build Now**.
+10. Open the build number.
+11. Open **Console Output**.
+12. Observe each stage.
+
+**Prepare.sh compatibility note:** This pipeline uses `checkout scm`, shell commands, and artifact archiving. Their availability depends on the playground's Jenkins configuration. If Git checkout is not configured, use a repository configured for that job or temporarily remove the Checkout stage and use the playground's available source files. If `python3` or `archiveArtifacts` is unavailable, note that limitation rather than treating the simulation as a real execution.
+
+# **8. Understand the Expected Pipeline Result**
+
+A successful execution should show stages similar to:
+
+```
+Checkout
+Inspect Repository
+Build
+Test
+Security Scan Simulation
+Package
+Archive Artifact
+Deploy Simulation
+```
+
+The final console output should include:
+
+```
+CI/CD Pipeline completed successfully!
+Pipeline execution finished
+Application: jenkins-cicd-training
+```
+
+
+
+Expected result
+
+&#x20;The Jenkins build status should be SUCCESS if all required steps execute successfully.
+
+
+
+# **9. Troubleshooting Common Failures**
+
+| Error                    | Possible reason                              | What to check                            |
+| ------------------------ | -------------------------------------------- | ---------------------------------------- |
+| `python3: not found`     | Python is not installed on the agent         | Check available runtime                  |
+| `app.py not found`       | Repository files are missing                 | Check checkout and workspace             |
+| `checkout scm` fails     | SCM is not configured                        | Check Pipeline job configuration         |
+| `archiveArtifacts` fails | Artifact archiving unavailable or wrong path | Check generated `build` directory        |
+| Permission denied        | Agent user lacks permission                  | Check workspace permissions              |
+| Pipeline syntax error    | Incorrect Groovy/Jenkins syntax              | Check braces, quotes and stage structure |
+
+### **Practical troubleshooting exercise**
+
+Introduce a failure intentionally:
+
+Change:
+
+```
+return a + b
+```
+
+To:
+
+```
+return a - b
+```
+
+Run the pipeline again.
+
+The test should fail because the expected answer is 30, but the application returns -10.
+
+This is how automated testing prevents incorrect code from progressing through a CI/CD pipeline.
+
+After observing the failure, restore the original code and rerun the pipeline.
+
+# **10. Production DevOps: What Would Change?**
+
+The training pipeline uses simple commands and simulations. A production pipeline would connect to real services.
+
+| Training pipeline        | Production implementation                        |
+| ------------------------ | ------------------------------------------------ |
+| Security scan simulation | SonarQube, Checkmarx, Black Duck                 |
+| Python syntax validation | Application-specific build process               |
+| Basic test script        | Pytest or another test framework                 |
+| Package directory        | Versioned package or container image             |
+| Archive artifact         | Artifact repository such as Nexus or Artifactory |
+| Deployment simulation    | Kubernetes, OpenShift, VM or cloud deployment    |
+| Manual Build Now         | GitHub webhook or automated trigger              |
+
+For example, a production DevSecOps pipeline might follow:
+
+```
+GitHub
+   |
+   v
+Jenkins
+   |
+   v
+Gitleaks Secret Scan
+   |
+   v
+SonarQube Code Quality
+   |
+   v
+Checkmarx SAST
+   |
+   v
+Black Duck SCA
+   |
+   v
+Docker Build
+   |
+   v
+Container Image Scan
+   |
+   v
+Container Registry
+   |
+   v
+OpenShift Deployment
+   |
+   v
+Application Verification
+```
+
+These are real integrations, not features automatically provided by the Prepare.sh playground.
+
+# **11. Student DIY Assignment**
+
+Ask students to complete these tasks independently.
+
+## **Task 1 – Application changes**
+
+- Change the welcome message.
+- Add a subtraction function.
+- Add a multiplication function.
+- Add tests for both functions.
+- Run the pipeline again.
+
+## **Task 2 – Jenkins pipeline changes**
+
+- Add a new stage called `Application Information`.
+- Print the application name.
+- Print the build version.
+- Add a stage called `Quality Check`.
+- Add a stage called `Deployment Verification`.
+
+## **Task 3 – Failure scenarios**
+
+- Introduce an incorrect test expectation.
+- Run the pipeline.
+- Observe the failed stage.
+- Fix the issue.
+- Run the pipeline again.
+- Confirm SUCCESS.
+
+## **Task 4 – GitHub practice**
+
+- Push the application to GitHub.
+- Push the Jenkinsfile.
+- Make one application code change.
+- Commit and push the changes.
+- Run Jenkins again.
+- Verify the latest code is being used.
+
+# **12. Interview Questions**
+
+1. What is CI/CD?
+2. What is the difference between Continuous Integration and Continuous Deployment?
+3. What is a Jenkinsfile?
+4. What is the difference between Declarative and Scripted Pipeline?
+5. What does `agent any` mean?
+6. What is the purpose of the `environment` block?
+7. What is the difference between a stage and a step?
+8. What is the purpose of the `post` block?
+9. What is `checkout scm`?
+10. What is an artifact in Jenkins?
+11. Why do we archive build artifacts?
+12. What happens when a pipeline stage fails?
+13. How can Jenkins integrate with GitHub?
+14. How can Jenkins execute security scans?
+15. How can Jenkins deploy an application to Kubernetes?
+16. What is the difference between Jenkins controller and agent?
+17. What are Jenkins credentials?
+18. Why should passwords not be hardcoded in a Jenkinsfile?
+19. How can we implement parallel execution?
+20. How do you troubleshoot a failed Jenkins pipeline?
+
+# **13. GitHub Portfolio Submission**
+
+Create this folder structure in your training repository:
+
+```
+jenkins-training/
+│
+├── session-01-jenkins-basics/
+├── session-02-declarative-pipeline/
+├── session-03-github-integration/
+├── session-04-parameters-credentials/
+├── session-05-agents-docker/
+│
+└── session-06-end-to-end-cicd/
+    ├── Jenkinsfile
+    ├── app.py
+    ├── test_app.py
+    ├── README.md
+    └── screenshots/
+```
+
+Save screenshots of:
+
+1. Jenkins pipeline configuration.
+2. Successful pipeline stage view.
+3. Console output.
+4. Failed test execution.
+5. Successful execution after fixing the test.
+6. Archived artifacts, if supported.
+
+Suggested Git commit:
+
+```
+git add .
+git commit -m "Completed Jenkins Session 6 end-to-end CI/CD project"
+git push origin main
+```
+
+# **14. Final Course Completion Checklist**
+
+Jenkins beginner course – 6 sessions
+
+| Session | Topic                                             | Status          |
+| ------- | ------------------------------------------------- | --------------- |
+| 1       | Jenkins Architecture and Basics                   | Completed       |
+| 2       | Declarative Jenkins Pipeline                      | Completed       |
+| 3       | Jenkins and GitHub Integration                    | Completed       |
+| 4       | Parameters, Environment Variables and Credentials | Completed       |
+| 5       | Agents, Distributed Builds and Docker             | Completed       |
+| 6       | End-to-End Jenkins CI/CD Project                  | Today's session |
+
+## **What students should be able to explain after this course**
+
+By the end of the six sessions, students should be able to:
+
+- Explain Jenkins architecture.
+- Create and execute Jenkins jobs.
+- Write basic Declarative Pipelines.
+- Integrate Jenkins with GitHub.
+- Understand parameters and environment variables.
+- Explain Jenkins credentials and secret handling.
+- Understand controllers, agents, and executors.
+- Explain Docker integration concepts.
+- Build a multi-stage CI/CD pipeline.
+- Troubleshoot common pipeline failures.
+- Explain how Jenkins fits into a DevSecOps workflow.
+
+**Trainer's final activity:** Ask each student to explain the complete CI/CD pipeline from a developer's GitHub commit to application deployment, using their own Jenkinsfile as the example.
+
+**Course complete.** The next useful step is a separate advanced practical project: integrate Jenkins with GitHub, SonarQube, Checkmarx, Docker, a container registry, and Kubernetes/OpenShift using real infrastructure.
